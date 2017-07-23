@@ -26,7 +26,7 @@ render_escapement = (c, r1, r2, r3, r4, sd, sn, n = 30, ns = 6.5) ->
 
 	# console output
 	document.getElementById("svg-out").textContent = svg.svg()
-	{wheel: g1, fork: g2, SVG:svg, svg:svg.svg()}
+	{w: g1, f: g2, SVG:svg, svg:svg.svg()}
 
 # math stuff
 pi = Math.PI
@@ -86,7 +86,7 @@ render_escapement_wheel = (svg, c, r1, r2, r3, r4, sd, sn, n) ->
 	svg.circle().radius(r1).cx(c[0]).cy(c[1])
 	svg.circle().radius(r2).cx(c[0]).cy(c[1])
 	svg.circle().radius(r3).cx(c[0]).cy(c[1])
-	#svg.circle().radius(r4).cx(c[0]).cy(c[1])
+	svg.circle().radius(r4).cx(c[0]).cy(c[1])
 	render_center(svg, c, 2.0, 3)
 	render_spokes(svg, c, r1, r2, sd, sn)
 	svg.c = c
@@ -128,29 +128,12 @@ render_escapement_fork = (svg, c, r1, r2, d, n, ns) ->
 	svg.transform({rotation: 3.0, cx: p3[0], cy : p3[1]}, true)
 	svg.c = p3
 
-animate = (escapement) ->
-	wheel = escapement.wheel
-	wcx = wheel.c[0]
-	wcy = wheel.c[1]
-	wheel_tick = () -> wheel.animate(500, '-').transform({rotation: -6, cx: wcx, cy : wcy}, true)
-	fork = escapement.fork
-	fcx = fork.c[0]
-	fcy = fork.c[1]
-	tick = true
-	tock = false
-	tick_back = (pos, morph, eased, situation) ->
-		if tick and pos > 0.5
-			tick = false
-			tock = true
-			wheel_tick()
-	tock_back = (pos, morph, eased, situation) ->
-		if tock and pos > 0.5
-			tick = true
-			tock = false
-			wheel_tick()
-	fork_tick = () -> fork.animate(1000, '<>').transform({rotation: -6, cx: fcx, cy : fcy}, true).during(tick_back).after(() -> fork_tock())
-	fork_tock = () -> fork.animate(1000, '<>').transform({rotation: 6, cx: fcx, cy : fcy}, true).during(tock_back).after(() -> fork_tick())
-	fork_tick()
+animate = (e) ->
+	lock = true
+	tic = (p) -> if lock and p > 0.5 then lock = false; wtic()
+	wtic = () -> e.w.animate(500, '-').transform({rotation: -6, cx: e.w.c[0], cy : e.w.c[1]}, true).after(() -> lock = true)
+	ftic = (t) -> e.f.animate(1000, '<>').transform({rotation: t, cx: e.f.c[0], cy : e.f.c[1]}, true).during(tic).after(() -> ftic(-t))
+	ftic(-6)
 
 window.escapement = render_escapement([100, 220], 12, 47, 55, 70, 8.0, 6, 30, 6.5)
 animate(escapement)
