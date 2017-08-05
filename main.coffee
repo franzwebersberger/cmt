@@ -1,3 +1,49 @@
+# math stuff
+abs = Math.abs
+pi = Math.PI
+pi2 = 0.5 * pi
+sin = Math.sin
+asin = Math.asin
+cos = Math.cos
+acos = Math.acos
+tan = Math.tan
+atan = Math.atan
+sqrt = Math.sqrt
+sqr = (x) -> x * x
+rad = (x) -> x * pi / 180
+deg = (x) -> x * 180 / pi
+dist = (p1, p2) -> sqrt(sqr(p2[0] - p1[0]) + sqr(p2[1] - p1[1]))
+rot = (p, r, t) -> [p[0] + r * cos(t), p[1] + r * sin(t)]
+tri = (a, b, c) -> {
+	alpha: acos((sqr(b) + sqr(c) - sqr(a)) / (2 * b * c))
+	beta: acos((sqr(a) + sqr(c) - sqr(b)) / (2 * a * c))
+	gamma: acos((sqr(a) + sqr(b) - sqr(c)) / (2 * a * b))
+}
+
+# SVG.js group wrapper
+G = (svg_js_g) ->
+	line = (p1, p2) -> svg_js_g.line(p1[0], p1[1], p2[0], p2[1])
+	circle = (c, r) -> svg_js_g.circle().cx(c[0]).cy(c[1]).radius(r)
+	crosshair = (c, r, n) ->
+		circle(c, i * r) for i in [1 .. n]
+		d = (n + 1) * r
+		line([c[0] - d, c[1]], [c[0] + d, c[1]])
+		line([c[0], c[1] - d], [c[0], c[1] + d])
+	spokes = (c, r1, r2, n, d, t0 = 0) ->
+		phi = 2 * pi / n
+		dt1 = asin(0.5 * d / r1)
+		dt2 = asin(0.5 * d / r2)
+		for i in [0 .. n - 1]
+			t = t0 + i * phi
+			line(rot(c, r1, t + dt1), rot(c, r2, t + dt2))
+			line(rot(c, r1, t - dt1), rot(c, r2, t - dt2))
+	{
+		line: line
+		circle: circle
+		crosshair: crosshair
+		spokes: spokes
+	}
+
 # renders a clock escapement (deadbeat, Graham) as svg
 # dependency: SVG.js http://svgjs.com/
 # unit: mm
@@ -20,50 +66,6 @@ render_escapement = (c, r1, r2, r3, r4, sd, sn, n = 30, ns = 6.5) ->
 	g2 = svg.group().attr("id", "fork").attr("style", style).translate(0, 297).scale(1, -1)
 	render_escapement_fork(g2, c, r1, r4, sd, n, ns)
 	{g1: g1, g2: g2, svg:svg.svg()}
-
-# math stuff
-abs = Math.abs
-pi = Math.PI
-pi2 = 0.5 * pi
-sin = Math.sin
-asin = Math.asin
-cos = Math.cos
-acos = Math.acos
-tan = Math.tan
-atan = Math.atan
-sqrt = Math.sqrt
-sqr = (x) -> x * x
-rad = (x) -> x * pi / 180
-deg = (x) -> x * 180 / pi
-dist = (p1, p2) -> sqrt(sqr(p2[0] - p1[0]) + sqr(p2[1] - p1[1]))
-rot = (p, r, t) -> [p[0] + r * cos(t), p[1] + r * sin(t)]
-tri = (a, b, c) ->
-	angle =
-		alpha: acos((sqr(b) + sqr(c) - sqr(a)) / (2 * b * c))
-		beta: acos((sqr(a) + sqr(c) - sqr(b)) / (2 * a * c))
-		gamma: acos((sqr(a) + sqr(b) - sqr(c)) / (2 * a * b))
-
-# center circles (crosshair)
-render_center = (svg, c, r1, n) ->
-	for i in [1 .. n]
-		svg.circle().radius(i * r1).cx(c[0]).cy(c[1])
-	d = (n + 1) * r1
-	svg.line(c[0] - d, c[1], c[0] + d, c[1])
-	svg.line(c[0], c[1] - d, c[0], c[1] + d)
-
-# spokes
-render_spokes = (svg, c, r1, r2, d, n, t0 = 0) ->
-	phi = 2 * pi / n
-	dt1 = asin(0.5 * d / r1)
-	dt2 = asin(0.5 * d / r2)
-	for i in [0 .. n-1]
-		t = t0 + i * phi
-		p1 = rot(c, r1, t + dt1)
-		p2 = rot(c, r2, t + dt2)
-		p3 = rot(c, r1, t - dt1)
-		p4 = rot(c, r2, t - dt2)
-		svg.line(p1[0], p1[1], p2[0], p2[1])
-		svg.line(p3[0], p3[1], p4[0], p4[1])
 
 # escapement wheel
 render_escapement_wheel = (svg, c, r1, r2, r3, r4, sd, sn, n) ->
@@ -89,8 +91,8 @@ render_escapement_wheel = (svg, c, r1, r2, r3, r4, sd, sn, n) ->
 	svg.circle().radius(r2).cx(c[0]).cy(c[1])
 	svg.circle().radius(r3).cx(c[0]).cy(c[1])
 	svg.circle().radius(r4).cx(c[0]).cy(c[1])
-	render_center(svg, c, 2.0, 3)
-	render_spokes(svg, c, r1, r2, sd, sn)
+	G(svg).crosshair(c, 2.0, 3)
+	G(svg).spokes(c, r1, r2, sn, sd)
 	svg.c = c
 
 # escapement fork
@@ -114,11 +116,11 @@ render_escapement_fork = (svg, c, r1, r2, d, n, ns) ->
 	p10 = rot(p3, rfi, tp10)
 	tp11 = 1.5 * pi - ts - tp0
 	p11 = rot(p3, rfa, tp11)
-	render_center(svg, p3, 2.0, 2)
+	G(svg).crosshair(p3, 2.0, 2)
 	svg.circle().radius(r1).cx(p3[0]).cy(p3[1])
 	svg.line(p8[0], p8[1], p9[0], p9[1])
 	svg.line(p10[0], p10[1], p11[0], p11[1])
-	render_spokes(svg, p3, r1, rfi, d, 3, -pi2)
+	G(svg).spokes(p3, r1, rfi, 3, d, -pi2)
 	svg.path("M#{p8[0]},#{p8[1]}A#{rfi},#{rfi},0,1,0,#{p10[0]},#{p10[1]}")
 	svg.path("M#{p9[0]},#{p9[1]}A#{rfa},#{rfa},0,1,0,#{p11[0]},#{p11[1]}")
 	svg.transform({rotation: 3.0, cx: p3[0], cy : p3[1]}, true)
@@ -162,8 +164,8 @@ render_ratchet_wheel = (svg, c, r1, r2, r3, r4, sd, sn, n) ->
 	svg.circle().radius(r3).cx(c[0]).cy(c[1])
 	#svg.circle().radius(r3 + 0.5*d).cx(c[0]).cy(c[1])
 	#svg.circle().radius(r4).cx(c[0]).cy(c[1])
-	render_center(svg, c, 2.0, 3)
-	render_spokes(svg, c, r1, r2, sd, sn)
+	G(svg).crosshair(c, 2.0, 3)
+	G(svg).spokes(c, r1, r2, sn, sd)
 	svg.c = c
 	cp = [c[0], c[1] + r4 + 2 * d]
 	angles = tri(dist(p0, cp), r4, r4 + 2 * d)
@@ -200,9 +202,8 @@ render_ratchet_pawl = (svg, c, r1, r2, n) ->
 	#svg.polyline([p3, p4])
 	svg.polyline(poly1)
 	svg.polyline(poly2)
-	#render_center(svg, p1, 1, 1)
 	svg.circle().radius(cr).cx(cp[0]).cy(cp[1])
-	render_center(svg, cp, 2.0, 3)
+	G(svg).crosshair(cp, 2.0, 3)
 	#svg.path("M#{p4[0]},#{p4[1]}A#{cr},#{cr},0,1,0,#{p3[0]},#{p3[1]}")
 	a = dist(p1, cp)
 	tri1 = tri(a, r2, r2 + 2 * d)
@@ -211,7 +212,6 @@ render_ratchet_pawl = (svg, c, r1, r2, n) ->
 	beta0 = tri1.beta - tri3.beta
 	beta1 = tri1.beta - tri2.beta
 	pv = rot(cp, a, - pi2 - tri1.beta)
-	#render_center(svg, pv, 1, 1)
 	svg.c = cp
 	svg.t0 = deg(beta0)
 	svg.t1 = deg(beta1)
@@ -220,7 +220,6 @@ render_ratchet_pawl = (svg, c, r1, r2, n) ->
 	svg.phid = abs(svg.phi1 - svg.phi0)
 	console.log("phid=", svg.phid)
 	#svg.circle().radius(a).cx(cp[0]).cy(cp[1])
-
 
 animate_ratchet = (r, time = 1000) ->
 	p = r.g1.tp
@@ -242,7 +241,6 @@ animate_ratchet = (r, time = 1000) ->
 		r.g2.transform({rotation: fphi, cx: r.g2.c[0], cy : r.g2.c[1]}, true)
 		wtic(dur1, wphi1, after1)
 	wtic(dur, wphi, after0)
-
 
 window.start_animation = () -> window.animation = animate_ratchet(render_result, 500)
 window.stop_animation = () -> window.animation?.stop()
