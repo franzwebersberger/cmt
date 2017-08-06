@@ -20,15 +20,39 @@ tri = (a, b, c) -> {
 	gamma: acos((sqr(a) + sqr(b) - sqr(c)) / (2 * a * b))
 }
 
-# SVG.js group wrapper
-G = (svg_js_g) ->
-	line = (p1, p2) -> svg_js_g.line(p1[0], p1[1], p2[0], p2[1])
-	circle = (c, r) -> svg_js_g.circle().cx(c[0]).cy(c[1]).radius(r)
+# SVG.js rendering wrapper
+render = (svg_js_g) ->
+
+	line = (p1, p2) ->
+		svg_js_g.line(p1[0], p1[1], p2[0], p2[1])
+		this
+
+	circle = (c, r) ->
+		svg_js_g.circle().cx(c[0]).cy(c[1]).radius(r)
+		this
+
+	gear = (c, n, p) ->
+		# see https://de.wikipedia.org/wiki/Evolventenverzahnung
+		# todo: use Zykloidenverzahnung?
+		phi = 2 * pi / n
+		m = p / pi
+		d = n * m
+		rg = 0.5 * p
+		rm = 0.5 * d
+		circle(c, rm)
+		for i in [1 .. n]
+			t = i * phi
+			cg = rot(c, rm, t)
+			circle(cg, rg)
+		this
+
 	crosshair = (c, r, n) ->
 		circle(c, i * r) for i in [1 .. n]
 		d = (n + 1) * r
 		line([c[0] - d, c[1]], [c[0] + d, c[1]])
 		line([c[0], c[1] - d], [c[0], c[1] + d])
+		this
+
 	spokes = (c, r1, r2, n, d, t0 = 0) ->
 		phi = 2 * pi / n
 		dt1 = asin(0.5 * d / r1)
@@ -37,12 +61,27 @@ G = (svg_js_g) ->
 			t = t0 + i * phi
 			line(rot(c, r1, t + dt1), rot(c, r2, t + dt2))
 			line(rot(c, r1, t - dt1), rot(c, r2, t - dt2))
-	{
-		line: line
-		circle: circle
-		crosshair: crosshair
-		spokes: spokes
-	}
+		this
+
+	wheel = (c, r1, r2, r3, n, d, t0 = 0, chr = 2, chn = 3) ->
+		crosshair(c, chr, chn)
+		spokes(c, r1, r2, n, d, t0)
+		circle(c, r1)
+		circle(c, r2)
+		circle(c, r3)
+		this
+
+	{line: line,	circle: circle,	crosshair: crosshair,	spokes: spokes, wheel: wheel, gear: gear}
+
+# create svg and groups
+create_svg = (style, group_ids...) ->
+	svg = SVG("drawing").size("210mm", "297mm").viewbox(0, 0, 210, 297)
+	svg.group().attr("id", id).attr("style", style).translate(0, 297).scale(1, -1) for id in group_ids
+
+render_wheel = (c, r1, r2, r3, n, d) ->
+	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2")
+	render(svg[0]).wheel(c, r1, r2, r3, n, d, 0, 2, 3).gear(c, 60, 8)
+	{g1: svg[0], g2: svg[1]}
 
 # renders a clock escapement (deadbeat, Graham) as svg
 # dependency: SVG.js http://svgjs.com/
@@ -246,8 +285,16 @@ window.start_animation = () -> window.animation = animate_ratchet(render_result,
 window.stop_animation = () -> window.animation?.stop()
 #window.render_result = render_escapement([100, 220], 12, 47, 55, 70, 8.0, 6, 30, 6.5)
 #animate_escapement(render_result)
-window.render_result = render_ratchet([100, 150], 15.0, 54.0, 62.0, 70.0, 8.0, 6, 12)
+#window.render_result = render_ratchet([100, 150], 15.0, 54.0, 62.0, 70.0, 8.0, 6, 12)
+window.render_result = render_wheel([100, 200], 15.0, 54.0, 62.0, 6, 8.0)
 document.getElementById("download").href = "data:image/svg+xml," + render_result.svg
 
 window.g = render_result.g2
 window.c = render_result.g2.c
+
+yyy = (args...) ->
+	x = (a) -> a + a
+	y = x(a) for a in args
+
+y = yyy("a", "b")
+console.log(y)
