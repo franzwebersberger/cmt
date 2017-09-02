@@ -8,17 +8,39 @@ cos = Math.cos
 acos = Math.acos
 tan = Math.tan
 atan = Math.atan
-sqrt = Math.sqrt
 sqr = (x) -> x * x
+sqrt = Math.sqrt
+p2 = (a, b, c) -> (x) -> a * x * x + b * x + c
+p2rt = (a, b, c) ->
+	d = sqrt(b * b - 4 * a * c)
+	[0.5 * (-b + d) / a, 0.5 * (-b - d) / a]
 rad = (x) -> x * pi / 180
 deg = (x) -> x * 180 / pi
 dist = (p1, p2) -> sqrt(sqr(p2[0] - p1[0]) + sqr(p2[1] - p1[1]))
 rot = (p, r, t) -> [p[0] + r * cos(t), p[1] + r * sin(t)]
+involute = (p, r, t, t0 = 0) ->
+	u = t0 + t
+	[p[0] + r * (cos(u) + t * sin(u)), p[1] + r * (sin(u) - t * cos(u))]
 tri = (a, b, c) -> {
 	alpha: acos((sqr(b) + sqr(c) - sqr(a)) / (2 * b * c))
 	beta: acos((sqr(a) + sqr(c) - sqr(b)) / (2 * a * c))
 	gamma: acos((sqr(a) + sqr(b) - sqr(c)) / (2 * a * b))
 }
+gn = (p1, p2) -> [p1[1] - p2[1], p2[0] - p1[0], (p1[1] - p2[1]) * p1[0] + (p2[0] - p1[0]) * p1[1]]
+intLineCircle = (a, b, c, cc, r) ->
+	d = c - a * cc[0] - b * cc[1]
+	N = a * a + b * b
+	D = sqrt(r * r * N - d * d)
+	x1 = cc[0] + (a * d + b * D) / N
+	x2 = cc[0] + (a * d - b * D) / N
+	y1 = cc[1] + (b * d - a * D) / N
+	y2 = cc[1] + (b * d + a * D) / N
+	[[x1, y1], [x2, y2]]
+intCircleCircle = (c1, r1, c2, r2) ->
+	a = 2 * (c2[0] - c1[0])
+	b = 2 * (c2[1] - c1[1])
+	c = r1 * r1 - r2 * r2 + c2[0] * c2[0] + c2[1] * c2[1] - c1[0] * c1[0] - c1[1] * c1[1]
+	intLineCircle(a, b, c, c1, r1)
 
 # SVG.js rendering wrapper
 render = (svg_js_g) ->
@@ -27,38 +49,55 @@ render = (svg_js_g) ->
 		svg_js_g.line(p1[0], p1[1], p2[0], p2[1])
 		this
 
+	polyline = (p...) ->
+		svg_js_g.polyline(p)
+		this
+
 	circle = (c, r) ->
 		svg_js_g.circle().cx(c[0]).cy(c[1]).radius(r)
 		this
 
-	gear = (c, n, p) ->
-		# see https://de.wikipedia.org/wiki/Evolventenverzahnung
-		# todo: use Zykloidenverzahnung?
-		phi = 2 * pi / n
-		m = p / pi
-		d = n * m
-		rg = 0.5 * p
-		rm = 0.5 * d
-		circle(c, rm)
-		for i in [1 .. n]
-			t = i * phi
-			cg = rot(c, rm, t)
-			circle(cg, rg)
+	text = (c, t, dc = [0, 0]) ->
+		svg_js_g.text(t).move(c[0] + dc[0], c[1] + dc[1]).font({size:4}).fill('#000000').scale(1, -1)
 		this
 
-	crosshair = (c, r, n) ->
+	# see https://de.wikipedia.org/wiki/Evolventenverzahnung
+	gear = (c, n, p, a = rad(20), phi0 = 0, ne = 5) ->
+		phi = 2 * pi / n
+		m = p / pi # modul
+		r = 0.5 * n * m
+		rb = r * cos(a)
+		rf = r - m
+		ra = r + m
+		dphi = 0.25 * phi + sqrt(r ** 2 - rb ** 2) / rb - acos(rb / r)
+		ta = sqrt(ra ** 2 - rb ** 2) / rb
+		tf = if rb < rf then sqrt(rf ** 2 - rb ** 2) / rb else 0.0
+		dt = (ta - tf) / ne
+		for i in [0 .. n - 1]
+			polyline(involute(c, rb, tf + j * dt, phi0 + i * phi - dphi) for j in [0 .. ne])
+			polyline(involute(c, rb, -tf - j * dt, phi0 + i * phi + dphi) for j in [0 .. ne])
+			line(involute(c, rb, ta, phi0 + i * phi - dphi), involute(c, rb, -ta, phi0 + i * phi + dphi))
+			if rb < rf
+				line(involute(c, rb, tf, phi0 + i * phi - dphi), involute(c, rb, -tf, phi0 + (i - 1) * phi + dphi))
+			else
+				line(rot(c, rf, phi0 + i * phi - dphi), rot(c, rb, phi0 + i * phi - dphi))
+				line(rot(c, rf, phi0 + (i - 1) * phi + dphi), rot(c, rb, phi0 + (i - 1) * phi + dphi))
+				line(rot(c, rf, phi0 + i * phi - dphi), rot(c, rf, phi0 + (i - 1) * phi + dphi))
+		this
+
+	crosshair = (c, r = 2, n = 3) ->
 		circle(c, i * r) for i in [1 .. n]
 		d = (n + 1) * r
 		line([c[0] - d, c[1]], [c[0] + d, c[1]])
 		line([c[0], c[1] - d], [c[0], c[1] + d])
 		this
 
-	spokes = (c, r1, r2, n, d, t0 = 0) ->
+	spokes = (c, r1, r2, n, d, phi0 = 0) ->
 		phi = 2 * pi / n
 		dt1 = asin(0.5 * d / r1)
 		dt2 = asin(0.5 * d / r2)
 		for i in [0 .. n - 1]
-			t = t0 + i * phi
+			t = phi0 + i * phi
 			line(rot(c, r1, t + dt1), rot(c, r2, t + dt2))
 			line(rot(c, r1, t - dt1), rot(c, r2, t - dt2))
 		this
@@ -71,12 +110,15 @@ render = (svg_js_g) ->
 		circle(c, r3)
 		this
 
-	{line: line,	circle: circle,	crosshair: crosshair,	spokes: spokes, wheel: wheel, gear: gear}
+	methods = {line, polyline, circle, text, crosshair, spokes, wheel, gear}
 
 # create svg and groups
 create_svg = (style, group_ids...) ->
 	svg = SVG("drawing").size("210mm", "297mm").viewbox(0, 0, 210, 297)
-	svg.group().attr("id", id).attr("style", style).translate(0, 297).scale(1, -1) for id in group_ids
+	result = {svg}
+	for id in group_ids
+		result[id] = svg.group().attr("id", id).attr("style", style).translate(0, 297).scale(1, -1)
+	result
 
 render_wheel = (c, r1, r2, r3, n, d) ->
 	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2")
@@ -281,20 +323,87 @@ animate_ratchet = (r, time = 1000) ->
 		wtic(dur1, wphi1, after1)
 	wtic(dur, wphi, after0)
 
-window.start_animation = () -> window.animation = animate_ratchet(render_result, 500)
-window.stop_animation = () -> window.animation?.stop()
+base_plan = (rg) ->
+	r1 = 4 / pi
+	r12 = 12 * r1
+	r18 = 18 * r1
+	r24 = 24 * r1
+	r36 = 36 * r1
+	r48 = 48 * r1
+	r54 = 54 * r1
+	r60 = 60 * r1
+	x0 = 100
+	y0 = 15
+	y1 = y0 + r12 + r60
+	y2 = y0 + 2 * r12 + 2 * r54
+	x3 = x0 - r12 - r24
+	x4 = x0 + r12 + r24
+	c0 = [x0, y0]
+	c1 = [x0, y1]
+	c2 = [x0, y2]
+	c3 = [x3, y2]
+	c4 = [x4, y2]
+	sn1 = intCircleCircle(c1, r48, c3, r36)
+	c5 = sn1[1]
+	sn2 = intCircleCircle(c1, r48, c4, r36)
+	c6 = sn2[0]
+	rew = 70
+	yef = y2 + rew / cos(pi * 6.5 / 30)
+	c7 = [x0, yef]
+	y8 = y0 + r12 + r54
+	c8 = [x0, y8]
+	rg
+	.crosshair(c0).text(c0, "c0", [4, 8]).circle(c0, r12).circle(c0, r60)
+	.crosshair(c1).circle(c1, r12).circle(c1, r36)
+	.crosshair(c2).circle(c2, r12)#.circle(c2, rew)
+	.crosshair(c3).circle(c3, r12).circle(c3, r24)
+	.crosshair(c4).circle(c4, r12).circle(c4, r24)
+	.crosshair(c5).circle(c5, r12).circle(c5, r24)
+	.crosshair(c6).circle(c6, r12).circle(c6, r24)
+	.crosshair(c7).text(c7, "EF", [5, 10])
+	.crosshair(c8, 1.5, 2)#.circle(c8, r54).circle(c8, r18)
+
+render_gear = (g1, g2) ->
+	p = 8
+	a = rad(20)
+	n1 = 12
+	n2 = 36
+	m = p / (2 * pi)
+	rd = (n1 + n2) * m
+	c1 = [70, 250]
+	c2 = [70, 250 - rd]
+	r21 = 12
+	r22 = 38
+	phi0 = 1.5 * pi + pi / n2
+	render(g1).gear(c1, n1, p, a).crosshair(c1)
+	render(g2).gear(c2, n2, p, a, phi0).crosshair(c2).circle(c2, r21).circle(c2, r22).spokes(c2, r21, r22, 6, 6)
+	{g1, g2, c1, c2, n1, n2}
+
+animate_gear = (gg) ->
+	n = 500000
+	phi1 = n * 360 / gg.n1
+	phi2 = -n * 360 / gg.n2
+	phi3 = n * 360 / gg.n3
+	t = 1000000000
+	gg.g1.animate(t).transform({rotation:phi1, cx:gg.c1[0], cy:gg.c1[1]}, true)
+	gg.g2.animate(t).transform({rotation:phi2, cx:gg.c2[0], cy:gg.c2[1]}, true)
+	gg
+
+animation_stop = (gg) ->
+	gg?.g1?.stop()
+	gg?.g2?.stop()
+
+#window.start_animation = () -> window.animation = animate_ratchet(render_result, 500)
+#window.stop_animation = () -> window.animation?.stop()
 #window.render_result = render_escapement([100, 220], 12, 47, 55, 70, 8.0, 6, 30, 6.5)
 #animate_escapement(render_result)
 #window.render_result = render_ratchet([100, 150], 15.0, 54.0, 62.0, 70.0, 8.0, 6, 12)
-window.render_result = render_wheel([100, 200], 15.0, 54.0, 62.0, 6, 8.0)
-document.getElementById("download").href = "data:image/svg+xml," + render_result.svg
+#window.render_result = render_wheel([100, 200], 15.0, 54.0, 62.0, 6, 8.0)
+#document.getElementById("download").href = "data:image/svg+xml," + render_result.svg
+window.svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2", "g3")
+window.gg = render_gear(svg["g1"], svg["g2"])
 
-window.g = render_result.g2
-window.c = render_result.g2.c
-
-yyy = (args...) ->
-	x = (a) -> a + a
-	y = x(a) for a in args
-
-y = yyy("a", "b")
-console.log(y)
+window.start_animation = () -> window.animation = animate_gear(gg)
+window.stop_animation = () -> animation_stop(gg)
+window.open_svg = () -> window.open("data:image/svg+xml," + escape(svg.svg.svg()));
+window.start_animation()
