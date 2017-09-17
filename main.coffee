@@ -245,12 +245,7 @@ ratchet = () ->
 			t = t0 + j * ht
 			rot(c, r, t)
 		render(g1).polyline([p0, p1]).polyline(points)
-	render(g1)
-	#.circle(c, r1)
-	#.circle(c, r2)
-	#.circle(c, r3)
-	.crosshair(c, 2.0, 3)
-	#.spokes(c, r1, r2, sn, sd)
+	render(g1).crosshair(c, 2.0, 3)
 
 	# pawl
 	d = r4 - r3
@@ -392,10 +387,9 @@ base_plan = () ->
 	{svg, g1, animation}
 
 window.gg = ratchet()
-window.svg = gg.svg
 
 window.start_animation = () -> gg.animation()
 window.stop_animation = () -> animation_stop(gg)
-window.open_svg = () -> window.open("data:image/svg+xml," + escape(svg.svg.svg()));
+window.open_svg = () -> window.open("data:image/svg+xml," + escape(gg.svg.svg.svg()));
 
 start_animation()
