@@ -216,18 +216,23 @@ escapement = () ->
 
 	{svg, g1, g2, animation}
 
-render_ratchet = (c, r1, r2, r3, r4, sd, sn, n = 6) ->
-	svg = SVG("drawing").size("210mm", "297mm").viewbox(0, 0, 210, 297)
-	style = "fill:none;stroke:#000000;stroke-width:0.2"
-	g1 = svg.group().attr("id", "wheel").attr("style", style).translate(0, 297).scale(1, -1)
-	render_ratchet_wheel(g1, c, r1, r2, r3, r4, sd, sn, n)
-	g2 = svg.group().attr("id", "pawl").attr("style", style).translate(0, 297).scale(1, -1)
-	render_ratchet_pawl(g2, c, r3, r4, n)
-	{g1: g1, g2: g2, svg:svg.svg()}
+ratchet = () ->
+	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2")
+	g1 = svg["g1"]
+	g2 = svg["g2"]
 
-render_ratchet_wheel = (svg, c, r1, r2, r3, r4, sd, sn, n) ->
-	phi = 2 * pi / n
+	c = [100, 150]
+	r1 = 15.0
+	r2 = 15.0
+	r3 = 19.0
+	r4 = 25.0
+	sd = 8.0
+	sn = 6
+	n = 12
 	tn = 40
+
+	# wheel
+	phi = 2 * pi / n
 	d = r4 - r3
 	hr = d / tn
 	ht = phi / tn
@@ -239,37 +244,24 @@ render_ratchet_wheel = (svg, c, r1, r2, r3, r4, sd, sn, n) ->
 			r = r4 - j * hr
 			t = t0 + j * ht
 			rot(c, r, t)
-		svg.polyline([p0, p1])
-		svg.polyline(points)
-	svg.circle().radius(r1).cx(c[0]).cy(c[1])
-	svg.circle().radius(r2).cx(c[0]).cy(c[1])
-	svg.circle().radius(r3).cx(c[0]).cy(c[1])
-	#svg.circle().radius(r3 + 0.5*d).cx(c[0]).cy(c[1])
-	#svg.circle().radius(r4).cx(c[0]).cy(c[1])
-	G(svg).crosshair(c, 2.0, 3)
-	G(svg).spokes(c, r1, r2, sn, sd)
-	svg.c = c
-	cp = [c[0], c[1] + r4 + 2 * d]
-	angles = tri(dist(p0, cp), r4, r4 + 2 * d)
-	svg.t0 = deg(angles.alpha)
-	svg.t1 = 360 / n
-	svg.tp = (svg.t0 - svg.t1) / svg.t0
-	console.log("tp", svg.tp)
+		render(g1).polyline([p0, p1]).polyline(points)
+	render(g1)
+	#.circle(c, r1)
+	#.circle(c, r2)
+	#.circle(c, r3)
+	.crosshair(c, 2.0, 3)
+	#.spokes(c, r1, r2, sn, sd)
 
-render_ratchet_pawl = (svg, c, r1, r2, n) ->
-	phi = 2 * pi / n
-	tn = 40
-	d = r2 - r1
-	cy = c[1] + r2 + 2 * d
+	# pawl
+	d = r4 - r3
+	cy = c[1] + r4 + 2 * d
 	cr = 1.5 * d
 	cp = [c[0], cy]
 	r0 = cy - c[1] + cr
-	hr = (r0 - r2) / tn
+	hr = (r0 - r4) / tn
 	ht = phi / tn
-	p1 = rot(c, r1, pi2 + phi)
-	p2 = rot(c, r2, pi2 + phi)
-	p3 = rot(c, r1 + cr, pi2)
-	p4 = rot(c, r1 + 3 * cr, pi2)
+	p1 = rot(c, r3, pi2 + phi)
+	p2 = rot(c, r4, pi2 + phi)
 	poly1 = (for i in [1 .. tn]
 		r = r0 - i * hr
 		t = pi2 + i * ht
@@ -277,92 +269,49 @@ render_ratchet_pawl = (svg, c, r1, r2, n) ->
 	).filter((p) -> dist(p, cp) >= cr)
 	hr = 1.5 * d / tn
 	poly2 = for i in [0 .. tn]
-		r = r1 + i * hr
+		r = r3 + i * hr
 		t = pi2 + phi - i * ht
 		rot(c, r, t)
-	svg.polyline([p1, p2])
-	#svg.polyline([p3, p4])
-	svg.polyline(poly1)
-	svg.polyline(poly2)
-	svg.circle().radius(cr).cx(cp[0]).cy(cp[1])
-	G(svg).crosshair(cp, 2.0, 3)
-	#svg.path("M#{p4[0]},#{p4[1]}A#{cr},#{cr},0,1,0,#{p3[0]},#{p3[1]}")
-	a = dist(p1, cp)
-	tri1 = tri(a, r2, r2 + 2 * d)
-	tri2 = tri(a, r1 + 0.5 * d, r2 + 2 * d)
-	tri3 = tri(a, r1, r2 + 2 * d)
-	beta0 = tri1.beta - tri3.beta
-	beta1 = tri1.beta - tri2.beta
-	pv = rot(cp, a, - pi2 - tri1.beta)
-	svg.c = cp
-	svg.t0 = deg(beta0)
-	svg.t1 = deg(beta1)
-	svg.phi0 = deg(1.5 * pi - tri3.beta)
-	svg.phi1 = deg(1.5 * pi - tri1.beta)
-	svg.phid = abs(svg.phi1 - svg.phi0)
-	console.log("phid=", svg.phid)
-	#svg.circle().radius(a).cx(cp[0]).cy(cp[1])
+	render(g2)
+	.polyline([p1, p2])
+	.polyline(poly1)
+	.polyline(poly2)
+	.circle(cp, cr)
+	.crosshair(cp, 2.0, 3)
 
-animate_ratchet = (r, time = 1000) ->
-	p = r.g1.tp
-	dur =  p * time
-	dur1 = (1 - p) * time
-	wphi = p * r.g1.t0
-	wphi1 = (1 - p) * r.g1.t0
-	fphi = p * r.g2.phid
-	rot0 = r.g2.transform().rotation
-	wtic = (d, t, a) -> r.g1.animate(d, '-').transform({rotation: t, cx: r.g1.c[0], cy : r.g1.c[1]}, true).during(wticevent).after(a)
-	wticevent = (pos, morph, eased, situation) ->
-		rot = r.g2.transform().rotation - (rot0 + pos * fphi)
-		r.g2.transform({rotation: rot, cx: r.g2.c[0], cy : r.g2.c[1]}, true)
-	after0 = () ->
-		rot0 = r.g2.transform().rotation
-		fphi = (1 - p) * r.g2.phid
-		wtic(dur1, wphi1, after1)
-	after1 = () ->
-		r.g2.transform({rotation: fphi, cx: r.g2.c[0], cy : r.g2.c[1]}, true)
-		wtic(dur1, wphi1, after1)
-	wtic(dur, wphi, after0)
+	animation = () ->
+		time = 500
+		angles = tri(dist(p1, cp), r4, r4 + 2 * d)
+		t0 = deg(angles.alpha)
+		t1 = 360 / n
+		p = (t0 - t1) / t0
+		a = dist(p1, cp)
+		tri1 = tri(a, r4, r4 + 2 * d)
+		tri2 = tri(a, r3, r4 + 2 * d)
+		phi0 = deg(1.5 * pi - tri2.beta)
+		phi1 = deg(1.5 * pi - tri1.beta)
+		phid = abs(phi1 - phi0)
+		dur =  p * time
+		dur1 = (1 - p) * time
+		wphi = p * t0
+		wphi1 = (1 - p) * t0
+		fphi = p * phid
+		rot0 = g2.transform().rotation
+		wtic = (d, t, a) -> g1.animate(d, '-').transform({rotation: t, cx: c[0], cy : c[1]}, true).during(wticevent).after(a)
+		wticevent = (pos, morph, eased, situation) ->
+			rot = g2.transform().rotation - (rot0 + pos * fphi)
+			g2.transform({rotation: rot, cx: cp[0], cy : cp[1]}, true)
+		after0 = () ->
+			rot0 = g2.transform().rotation
+			fphi = (1 - p) * phid
+			wtic(dur1, wphi1, after1)
+		after1 = () ->
+			g2.transform({rotation: fphi, cx: cp[0], cy : cp[1]}, true)
+			wtic(dur1, wphi1, after1)
+		wtic(dur, wphi, after0)
 
-base_plan = (rg) ->
-	r1 = 4 / pi
-	r12 = 12 * r1
-	r18 = 18 * r1
-	r24 = 24 * r1
-	r36 = 36 * r1
-	r48 = 48 * r1
-	r54 = 54 * r1
-	r60 = 60 * r1
-	x0 = 100
-	y0 = 15
-	y1 = y0 + r12 + r60
-	y2 = y0 + 2 * r12 + 2 * r54
-	x3 = x0 - r12 - r24
-	x4 = x0 + r12 + r24
-	c0 = [x0, y0]
-	c1 = [x0, y1]
-	c2 = [x0, y2]
-	c3 = [x3, y2]
-	c4 = [x4, y2]
-	sn1 = intCircleCircle(c1, r48, c3, r36)
-	c5 = sn1[1]
-	sn2 = intCircleCircle(c1, r48, c4, r36)
-	c6 = sn2[0]
-	rew = 70
-	yef = y2 + rew / cos(pi * 6.5 / 30)
-	c7 = [x0, yef]
-	y8 = y0 + r12 + r54
-	c8 = [x0, y8]
-	rg
-	.crosshair(c0).text(c0, "c0", [4, 8]).circle(c0, r12).circle(c0, r60)
-	.crosshair(c1).circle(c1, r12).circle(c1, r36)
-	.crosshair(c2).circle(c2, r12)#.circle(c2, rew)
-	.crosshair(c3).circle(c3, r12).circle(c3, r24)
-	.crosshair(c4).circle(c4, r12).circle(c4, r24)
-	.crosshair(c5).circle(c5, r12).circle(c5, r24)
-	.crosshair(c6).circle(c6, r12).circle(c6, r24)
-	.crosshair(c7).text(c7, "EF", [5, 10])
-	.crosshair(c8, 1.5, 2)#.circle(c8, r54).circle(c8, r18)
+	{svg, g1, g2, animation}
+
 
 gear = (g1, g2) ->
 	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2")
@@ -394,10 +343,55 @@ gear = (g1, g2) ->
 
 animation_stop = (gg) -> gg[key].stop() for key in Object.keys(gg) when key.startsWith("g")
 
-#window.render_result = render_ratchet([100, 150], 15.0, 54.0, 62.0, 70.0, 8.0, 6, 12)
-#window.render_result = render_wheel([100, 200], 15.0, 54.0, 62.0, 6, 8.0)
 
-window.gg = escapement()
+base_plan = () ->
+	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2")
+	g1 = svg["g1"]
+
+	r1 = 4 / pi
+	r12 = 12 * r1
+	r18 = 18 * r1
+	r24 = 24 * r1
+	r36 = 36 * r1
+	r48 = 48 * r1
+	r54 = 54 * r1
+	r60 = 60 * r1
+	x0 = 100
+	y0 = 15
+	y1 = y0 + r12 + r60
+	y2 = y0 + 2 * r12 + 2 * r54
+	x3 = x0 - r12 - r24
+	x4 = x0 + r12 + r24
+	c0 = [x0, y0]
+	c1 = [x0, y1]
+	c2 = [x0, y2]
+	c3 = [x3, y2]
+	c4 = [x4, y2]
+	sn1 = intCircleCircle(c1, r48, c3, r36)
+	c5 = sn1[1]
+	sn2 = intCircleCircle(c1, r48, c4, r36)
+	c6 = sn2[0]
+	rew = 70
+	yef = y2 + rew / cos(pi * 6.5 / 30)
+	c7 = [x0, yef]
+	y8 = y0 + r12 + r54
+	c8 = [x0, y8]
+	render(g1)
+	.crosshair(c0).text(c0, "c0", [4, 8]).circle(c0, r12).circle(c0, r60)
+	.crosshair(c1).circle(c1, r12).circle(c1, r36)
+	.crosshair(c2).circle(c2, r12)#.circle(c2, rew)
+	.crosshair(c3).circle(c3, r12).circle(c3, r24)
+	.crosshair(c4).circle(c4, r12).circle(c4, r24)
+	.crosshair(c5).circle(c5, r12).circle(c5, r24)
+	.crosshair(c6).circle(c6, r12).circle(c6, r24)
+	.crosshair(c7).text(c7, "EF", [5, 10])
+	.crosshair(c8, 1.5, 2)#.circle(c8, r54).circle(c8, r18)
+
+	animation = () ->
+
+	{svg, g1, animation}
+
+window.gg = ratchet()
 window.svg = gg.svg
 
 window.start_animation = () -> gg.animation()
