@@ -53,6 +53,14 @@ render = (svg_js_g) ->
 		svg_js_g.polyline(p)
 		this
 
+	path = (p) ->
+		svg_js_g.path(p)
+		this
+
+	transform = (t, r) ->
+		svg_js_g.transform(t, r)
+		this
+
 	circle = (c, r) ->
 		svg_js_g.circle().cx(c[0]).cy(c[1]).radius(r)
 		this
@@ -110,7 +118,7 @@ render = (svg_js_g) ->
 		circle(c, r3)
 		this
 
-	methods = {line, polyline, circle, text, crosshair, spokes, wheel, gear}
+	methods = {line, polyline, path, transform, circle, text, crosshair, spokes, wheel, gear}
 
 # create svg and groups
 create_svg = (style, group_ids...) ->
@@ -119,11 +127,6 @@ create_svg = (style, group_ids...) ->
 	for id in group_ids
 		result[id] = svg.group().attr("id", id).attr("style", style).translate(0, 297).scale(1, -1)
 	result
-
-render_wheel = (c, r1, r2, r3, n, d) ->
-	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2")
-	render(svg[0]).wheel(c, r1, r2, r3, n, d, 0, 2, 3).gear(c, 60, 8)
-	{g1: svg[0], g2: svg[1]}
 
 # renders a clock escapement (deadbeat, Graham) as svg
 # dependency: SVG.js http://svgjs.com/
@@ -139,17 +142,20 @@ render_wheel = (c, r1, r2, r3, n, d) ->
 # sn: number of spokes
 # n: number of teeth
 # ns: übergriffene teilungen todo: translate
-render_escapement = (c, r1, r2, r3, r4, sd, sn, n = 30, ns = 6.5) ->
-	svg = SVG("drawing").size("210mm", "297mm").viewbox(0, 0, 210, 297)
-	style = "fill:none;stroke:#000000;stroke-width:0.2"
-	g1 = svg.group().attr("id", "wheel").attr("style", style).translate(0, 297).scale(1, -1)
-	render_escapement_wheel(g1, c, r1, r2, r3, r4, sd, sn, n)
-	g2 = svg.group().attr("id", "fork").attr("style", style).translate(0, 297).scale(1, -1)
-	render_escapement_fork(g2, c, r1, r4, sd, n, ns)
-	{g1: g1, g2: g2, svg:svg.svg()}
+escapement = () ->
+	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2")
+	g1 = svg["g1"]
+	g2 = svg["g2"]
 
-# escapement wheel
-render_escapement_wheel = (svg, c, r1, r2, r3, r4, sd, sn, n) ->
+	c = [100, 220]
+	r1 = 12.0
+	r2 = 50.0
+	r3 = 55.0
+	r4 = 70.0
+	sd = 5.0
+	sn = 6
+	n = 30
+	ns = 6.5
 	phi = 2 * pi / n
 	te = rad(1.0) # todo: this is a depending var
 	tt = rad(18.5) # todo: this is a depending var
@@ -165,25 +171,22 @@ render_escapement_wheel = (svg, c, r1, r2, r3, r4, sd, sn, n) ->
 		p2 = rot(c, r4, t2)
 		p3 = rot(p1, rt, t3)
 		p4 = rot(p2, rl, t4)
-		svg.line(p1[0], p1[1], p3[0], p3[1])
-		svg.line(p1[0], p1[1], p2[0], p2[1])
-		svg.line(p2[0], p2[1], p4[0], p4[1])
-	svg.circle().radius(r1).cx(c[0]).cy(c[1])
-	svg.circle().radius(r2).cx(c[0]).cy(c[1])
-	svg.circle().radius(r3).cx(c[0]).cy(c[1])
-	svg.circle().radius(r4).cx(c[0]).cy(c[1])
-	G(svg).crosshair(c, 2.0, 3)
-	G(svg).spokes(c, r1, r2, sn, sd)
-	svg.c = c
+		render(g1).polyline(p3, p1, p2, p4)
+	render(g1)
+	.circle(c, r1)
+	.circle(c, r2)
+	.circle(c, r3)
+	#.circle(c, r4)
+	.crosshair(c, 2.0, 3)
+	.spokes(c, r1, r2, sn, sd)
 
-# escapement fork
-render_escapement_fork = (svg, c, r1, r2, d, n, ns) ->
+	# fork
 	ts = ns * pi / n
 	te = rad(2.0) # todo: this is a depending var
 	p0 = c
-	p3 = [c[0], c[1] - r2 / cos(pi * ns / n)]
-	p4 = rot(c, r2, ts + te - pi2)
-	p5 = rot(c, r2, ts - te - pi2)
+	p3 = [c[0], c[1] - r4 / cos(pi * ns / n)]
+	p4 = rot(c, r4, ts + te - pi2)
+	p5 = rot(c, r4, ts - te - pi2)
 	rfa = dist(p3, p4)
 	rfi = dist(p3, p5)
 	tlift = rad(2.0)
@@ -197,18 +200,31 @@ render_escapement_fork = (svg, c, r1, r2, d, n, ns) ->
 	p10 = rot(p3, rfi, tp10)
 	tp11 = 1.5 * pi - ts - tp0
 	p11 = rot(p3, rfa, tp11)
-	G(svg).crosshair(p3, 2.0, 2)
-	svg.circle().radius(r1).cx(p3[0]).cy(p3[1])
-	svg.line(p8[0], p8[1], p9[0], p9[1])
-	svg.line(p10[0], p10[1], p11[0], p11[1])
-	G(svg).spokes(p3, r1, rfi, 3, d, -pi2)
-	svg.path("M#{p8[0]},#{p8[1]}A#{rfi},#{rfi},0,1,0,#{p10[0]},#{p10[1]}")
-	svg.path("M#{p9[0]},#{p9[1]}A#{rfa},#{rfa},0,1,0,#{p11[0]},#{p11[1]}")
-	svg.transform({rotation: 3.0, cx: p3[0], cy : p3[1]}, true)
-	svg.c = p3
+	render(g2)
+	.crosshair(p3, 2.0, 3)
+	.circle(p3, r1)
+	.line(p8, p9)
+	#.line(p11, p9)
+	.line(p10, p11)
+	.spokes(p3, r1, rfi, 3, sd, -pi2 - rad(1.0))
+	.path("M#{p8[0]},#{p8[1]}A#{rfi},#{rfi},0,1,0,#{p10[0]},#{p10[1]}")
+	.path("M#{p9[0]},#{p9[1]}A#{rfa},#{rfa},0,1,0,#{p11[0]},#{p11[1]}")
+	.transform({rotation: 3.0, cx: p3[0], cy : p3[1]}, true)
+
+	animation = () ->
+		lock = true
+		tic = (p) -> if lock and p > 0.5 then lock = false; wtic()
+		wtic = () -> g1.animate(500, '-').transform({rotation: -6, cx: c[0], cy : c[1]}, true).after(() -> lock = true)
+		ftic = (t) -> g2.animate(1000, '<>').transform({rotation: t, cx: p3[0], cy : p3[1]}, true).during(tic).after(() -> ftic(-t))
+		ftic(-6)
+
+	{svg, g1, g2, animation}
+
+animate_escapement = (gg) ->
+	gg
 
 # animate escapement
-animate_escapement = (e) ->
+animate_escapement2 = (e) ->
 	lock = true
 	tic = (p) -> if lock and p > 0.5 then lock = false; wtic()
 	wtic = () -> e.g1.animate(500, '-').transform({rotation: -6, cx: e.g1.c[0], cy : e.g1.c[1]}, true).after(() -> lock = true)
@@ -363,7 +379,10 @@ base_plan = (rg) ->
 	.crosshair(c7).text(c7, "EF", [5, 10])
 	.crosshair(c8, 1.5, 2)#.circle(c8, r54).circle(c8, r18)
 
-render_gear = (g1, g2) ->
+gear = (g1, g2) ->
+	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2")
+	g1 = svg["g1"]
+	g2 = svg["g2"]
 	p = 8
 	a = rad(20)
 	n1 = 12
@@ -377,33 +396,27 @@ render_gear = (g1, g2) ->
 	phi0 = 1.5 * pi + pi / n2
 	render(g1).gear(c1, n1, p, a).crosshair(c1)
 	render(g2).gear(c2, n2, p, a, phi0).crosshair(c2).circle(c2, r21).circle(c2, r22).spokes(c2, r21, r22, 6, 6)
-	{g1, g2, c1, c2, n1, n2}
 
-animate_gear = (gg) ->
-	n = 500000
-	phi1 = n * 360 / gg.n1
-	phi2 = -n * 360 / gg.n2
-	phi3 = n * 360 / gg.n3
-	t = 1000000000
-	gg.g1.animate(t).transform({rotation:phi1, cx:gg.c1[0], cy:gg.c1[1]}, true)
-	gg.g2.animate(t).transform({rotation:phi2, cx:gg.c2[0], cy:gg.c2[1]}, true)
-	gg
+	animation = () ->
+		n = 500000
+		phi1 = n * 360 / n1
+		phi2 = -n * 360 / n2
+		t = 1000000000
+		g1.animate(t).transform({rotation:phi1, cx:c1[0], cy:c1[1]}, true)
+		g2.animate(t).transform({rotation:phi2, cx:c2[0], cy:c2[1]}, true)
 
-animation_stop = (gg) ->
-	gg?.g1?.stop()
-	gg?.g2?.stop()
+	{svg, g1, g2, animation}
 
-#window.start_animation = () -> window.animation = animate_ratchet(render_result, 500)
-#window.stop_animation = () -> window.animation?.stop()
-#window.render_result = render_escapement([100, 220], 12, 47, 55, 70, 8.0, 6, 30, 6.5)
-#animate_escapement(render_result)
+animation_stop = (gg) -> gg[key].stop() for key in Object.keys(gg) when key.startsWith("g")
+
 #window.render_result = render_ratchet([100, 150], 15.0, 54.0, 62.0, 70.0, 8.0, 6, 12)
 #window.render_result = render_wheel([100, 200], 15.0, 54.0, 62.0, 6, 8.0)
-#document.getElementById("download").href = "data:image/svg+xml," + render_result.svg
-window.svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2", "g3")
-window.gg = render_gear(svg["g1"], svg["g2"])
 
-window.start_animation = () -> window.animation = animate_gear(gg)
+window.gg = gear()
+window.svg = gg.svg
+
+window.start_animation = () -> gg.animation()
 window.stop_animation = () -> animation_stop(gg)
 window.open_svg = () -> window.open("data:image/svg+xml," + escape(svg.svg.svg()));
-window.start_animation()
+
+start_animation()
