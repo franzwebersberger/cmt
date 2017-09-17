@@ -128,11 +128,8 @@ create_svg = (style, group_ids...) ->
 		result[id] = svg.group().attr("id", id).attr("style", style).translate(0, 297).scale(1, -1)
 	result
 
-# renders a clock escapement (deadbeat, Graham) as svg
-# dependency: SVG.js http://svgjs.com/
+# render a clock escapement (deadbeat, Graham)
 # unit: mm
-#
-# params:
 # c: center of escapement wheel
 # r1: inner radius
 # r2: inner ring radius
@@ -204,7 +201,6 @@ escapement = () ->
 	.crosshair(p3, 2.0, 3)
 	.circle(p3, r1)
 	.line(p8, p9)
-	#.line(p11, p9)
 	.line(p10, p11)
 	.spokes(p3, r1, rfi, 3, sd, -pi2 - rad(1.0))
 	.path("M#{p8[0]},#{p8[1]}A#{rfi},#{rfi},0,1,0,#{p10[0]},#{p10[1]}")
@@ -219,17 +215,6 @@ escapement = () ->
 		ftic(-6)
 
 	{svg, g1, g2, animation}
-
-animate_escapement = (gg) ->
-	gg
-
-# animate escapement
-animate_escapement2 = (e) ->
-	lock = true
-	tic = (p) -> if lock and p > 0.5 then lock = false; wtic()
-	wtic = () -> e.g1.animate(500, '-').transform({rotation: -6, cx: e.g1.c[0], cy : e.g1.c[1]}, true).after(() -> lock = true)
-	ftic = (t) -> e.g2.animate(1000, '<>').transform({rotation: t, cx: e.g2.c[0], cy : e.g2.c[1]}, true).during(tic).after(() -> ftic(-t))
-	ftic(-6)
 
 render_ratchet = (c, r1, r2, r3, r4, sd, sn, n = 6) ->
 	svg = SVG("drawing").size("210mm", "297mm").viewbox(0, 0, 210, 297)
@@ -412,7 +397,7 @@ animation_stop = (gg) -> gg[key].stop() for key in Object.keys(gg) when key.star
 #window.render_result = render_ratchet([100, 150], 15.0, 54.0, 62.0, 70.0, 8.0, 6, 12)
 #window.render_result = render_wheel([100, 200], 15.0, 54.0, 62.0, 6, 8.0)
 
-window.gg = gear()
+window.gg = escapement()
 window.svg = gg.svg
 
 window.start_animation = () -> gg.animation()
