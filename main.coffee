@@ -336,6 +336,73 @@ gear = (g1, g2) ->
 
 	{svg, g1, g2, animation}
 
+
+
+v2 = () ->
+	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2", "g3", "g4", "g5", "g6", "g7", "g8", "g9", "g10", "g11", "ga")
+	g1 = svg["g1"]
+	g2 = svg["g2"]
+	g3 = svg["g3"]
+	g4 = svg["g4"]
+	g5 = svg["g5"]
+	g6 = svg["g6"]
+	g7 = svg["g7"]
+	g8 = svg["g8"]
+	g9 = svg["g9"]
+	g10 = svg["g10"]
+	g11 = svg["g11"]
+	ga = svg["ga"]
+	p = 8
+	a = rad(20)
+	n1 = 54
+	n2 = 12
+	n3 = 36
+	n4 = 12
+	n5 = 32
+	n6 = 12
+	n7 = 20
+	na = 12
+	m = p / (2 * pi)
+	r12 = (n1 + n2) * m
+	r34 = (n3 + n4) * m
+	r56 = (n5 + n6) * m
+	r7a = (n7 + na) * m
+	x0 = 105
+	y0 = 210
+	c1 = [x0, y0]
+	c2 = [x0, y0 - r12]
+	c4 = [x0 - r34, y0 - r12]
+	c6 = [x0 - r7a, y0 - 2 * r12]
+	c6r = [x0 + r7a, y0 - 2 * r12]
+	cc = intCircleCircle(c2, r34, c6, r56)
+	c4 = cc[0]
+	c4r = [x0 + (x0 - c4[0]), c4[1]]
+	ca = [x0, y0 - 2 * r12]
+	phi0 = 1.5 * pi + pi * n1 / n2
+	render(g1).gear(c1, n1, p, a).crosshair(c1).spokes(c1, 13, 58, 5, 10).circle(c1, 13).circle(c1, 58)
+	render(g2).gear(c2, n2, p, a, phi0).crosshair(c2)
+	render(g3).gear(c2, n3, p, a, phi0).crosshair(c2).spokes(c2, 13, 37, 3, 7).circle(c2, 13).circle(c2, 37)
+	render(g4).gear(c4, n4, p, a, phi0).crosshair(c4)
+	render(g5).gear(c4, n5, p, a, phi0).crosshair(c4).spokes(c4, 13, 32, 3, 7).circle(c4, 13).circle(c4, 32)
+	render(g6).gear(c6, n6, p, a, phi0).crosshair(c6)
+	render(g7).gear(c6, n7, p, a, phi0).crosshair(c6)
+	render(g8).gear(c6r, n6, p, a, phi0).crosshair(c6r)
+	render(g9).gear(c6r, n7, p, a, phi0).crosshair(c6r)
+	render(g10).gear(c4r, n4, p, a, phi0).crosshair(c4r)
+	render(g11).gear(c4r, n5, p, a, phi0).crosshair(c4r).spokes(c4r, 13, 32, 3, 7).circle(c4r, 13).circle(c4r, 32)
+	render(ga).gear(ca, na, p, a, phi0).crosshair(ca)
+
+	animation = () ->
+		n = 500000
+		phi1 = n * 360 / n1
+		phi2 = -n * 360 / n2
+		t = 1000000000
+		g1.animate(t).transform({rotation:phi1, cx:c1[0], cy:c1[1]}, true)
+		g2.animate(t).transform({rotation:phi2, cx:c2[0], cy:c2[1]}, true)
+		g3.animate(t).transform({rotation:phi2, cx:c2[0], cy:c2[1]}, true)
+
+	{svg, g1, g2, g3, animation}
+
 animation_stop = (gg) -> gg[key].stop() for key in Object.keys(gg) when key.startsWith("g")
 
 
@@ -386,10 +453,10 @@ base_plan = () ->
 
 	{svg, g1, animation}
 
-window.gg = ratchet()
+window.gg = v2()
 
 window.start_animation = () -> gg.animation()
 window.stop_animation = () -> animation_stop(gg)
 window.open_svg = () -> window.open("data:image/svg+xml," + escape(gg.svg.svg.svg()));
 
-start_animation()
+#start_animation()
