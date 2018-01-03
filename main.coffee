@@ -336,6 +336,39 @@ gear = (g1, g2) ->
 
 	{svg, g1, g2, animation}
 
+zeiger_werk_12_48_15_45 = () ->
+	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2", "g3", "g4")
+	g1 = svg["g1"]
+	g2 = svg["g2"]
+	g3 = svg["g3"]
+	g4 = svg["g4"]
+	p = 8
+	a = rad(20)
+	n1 = 12
+	n2 = 48
+	n3 = 15
+	n4 = 45
+	m = p / pi
+	r1 = 0.5 * n1 * m + m
+	r2 = 0.5 * n2 * m + m
+	r3 = 0.5 * n3 * m + m
+	r4 = 0.5 * n4 * m + m
+	r12 = 0.5 * (n1 + n2) * m
+	r34 = 0.5 * (n3 + n4) * m
+	x0 = 105
+	y0 = 210
+	c1 = [x0, y0]
+	c2 = [x0, y0 - r12]
+	c3 = c2
+	c4 = c1
+	render(g1).gear(c1, n1, p, a).crosshair(c1).circle(c1, r1)
+	render(g2).gear(c2, n2, p, a).crosshair(c2).spokes(c2, 13, 52, 3, 8).circle(c2, 13).circle(c2, 52).circle(c2, r2)
+	render(g3).gear(c3, n3, p, a).crosshair(c3).circle(c3, r3)
+	render(g4).gear(c4, n4, p, a).crosshair(c4).spokes(c4, 13, 48, 3, 8).circle(c4, 13).circle(c4, 48).circle(c4, r4)
+
+	animation = () ->
+
+	{svg, g1, g2, g3, g4, animation}
 
 
 v2 = () ->
@@ -453,7 +486,7 @@ base_plan = () ->
 
 	{svg, g1, animation}
 
-window.gg = v2()
+window.gg = zeiger_werk_12_48_15_45()
 
 window.start_animation = () -> gg.animation()
 window.stop_animation = () -> animation_stop(gg)
