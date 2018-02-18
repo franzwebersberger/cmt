@@ -370,6 +370,22 @@ zeiger_werk_12_48_15_45 = () ->
 
 	{svg, g1, g2, g3, g4, animation}
 
+single_gear = (n, rsi, rsa, sn, sd) ->
+	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1")
+	g1 = svg["g1"]
+	p = 8
+	a = rad(20)
+	m = p / pi
+	r = 0.5 * n * m + m
+	x0 = 105
+	y0 = 210
+	c = [x0, y0]
+	render(g1).gear(c, n, p, a).crosshair(c).circle(c, r).spokes(c, rsi, rsa, sn, sd).circle(c, rsi).circle(c, rsa)
+
+	animation = () ->
+
+	{svg, g1, animation}
+
 
 v2 = () ->
 	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2", "g3", "g4", "g5", "g6", "g7", "g8", "g9", "g10", "g11", "ga")
@@ -486,7 +502,7 @@ base_plan = () ->
 
 	{svg, g1, animation}
 
-window.gg = zeiger_werk_12_48_15_45()
+window.gg = single_gear(27, 13, 27, 3, 8)
 
 window.start_animation = () -> gg.animation()
 window.stop_animation = () -> animation_stop(gg)

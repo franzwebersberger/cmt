@@ -6,3 +6,4 @@ meine clock making tools
 [ratchet in action](http://jsfiddle.net/dz7y84o0/49/)  
 [laufwerk model v2](http://jsfiddle.net/dz7y84o0/52/)  
 [zeiger_werk_12_48_15_45](http://jsfiddle.net/dz7y84o0/53/)
+[latest](http://jsfiddle.net/dz7y84o0/71/)
