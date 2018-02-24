@@ -10,6 +10,7 @@ tan = Math.tan
 atan = Math.atan
 sqr = (x) -> x * x
 sqrt = Math.sqrt
+Rnp = (n, p=8) -> n * p/(2*pi)
 p2 = (a, b, c) -> (x) -> a * x * x + b * x + c
 p2rt = (a, b, c) ->
 	d = sqrt(b * b - 4 * a * c)
@@ -216,7 +217,7 @@ escapement = () ->
 
 	{svg, g1, g2, animation}
 
-ratchet = () ->
+ratchet = (n, ra, cri=0.85) ->
 	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2")
 	g1 = svg["g1"]
 	g2 = svg["g2"]
@@ -224,11 +225,10 @@ ratchet = () ->
 	c = [100, 150]
 	r1 = 15.0
 	r2 = 15.0
-	r3 = 19.0
-	r4 = 25.0
+	r3 = cri*ra
+	r4 = ra
 	sd = 8.0
 	sn = 6
-	n = 12
 	tn = 40
 
 	# wheel
@@ -245,7 +245,7 @@ ratchet = () ->
 			t = t0 + j * ht
 			rot(c, r, t)
 		render(g1).polyline([p0, p1]).polyline(points)
-	render(g1).crosshair(c, 2.0, 3)
+	render(g1).crosshair(c, 2.0, 3).circle(c, r4)
 
 	# pawl
 	d = r4 - r3
@@ -502,10 +502,10 @@ base_plan = () ->
 
 	{svg, g1, animation}
 
-window.gg = single_gear(27, 13, 27, 3, 8)
+window.gg = ratchet(18, Rnp(30), 0.88)
 
-window.start_animation = () -> gg.animation()
-window.stop_animation = () -> animation_stop(gg)
+#window.start_animation = () -> gg.animation()
+#window.stop_animation = () -> animation_stop(gg)
 window.open_svg = () -> window.open("data:image/svg+xml," + escape(gg.svg.svg.svg()));
 
 #start_animation()
