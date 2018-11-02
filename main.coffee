@@ -66,8 +66,8 @@ render = (svg_js_g) ->
 		svg_js_g.circle().cx(c[0]).cy(c[1]).radius(r)
 		this
 
-	text = (c, t, dc = [0, 0]) ->
-		svg_js_g.text(t).move(c[0] + dc[0], c[1] + dc[1]).font({size:4}).fill('#000000').scale(1, -1)
+	text = (c, t, dc = [0, 0], s=4) ->
+		svg_js_g.text(t).move(c[0] + dc[0], c[1] + dc[1]).font({size:s, anchor:'middle', family:'Times'}).fill('#000000').scale(1, -1)
 		this
 
 	# see https://de.wikipedia.org/wiki/Evolventenverzahnung
@@ -454,6 +454,52 @@ v2 = () ->
 
 animation_stop = (gg) -> gg[key].stop() for key in Object.keys(gg) when key.startsWith("g")
 
+zifferblatt = () ->
+	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2", "g3", "g4")
+	g1 = svg["g1"]
+	g2 = svg["g2"]
+	g3 = svg["g3"]
+	g4 = svg["g4"]
+
+	c = [160,150]
+	ri = 100
+	ra = 140
+	rai = 133
+	rt = 115
+
+	render(g1)
+	.circle(c, ri)
+	.circle(c, ra)
+
+	n = 60
+	dt = 2*pi / n
+
+	g2.attr("style", "fill:none;stroke:#000000;stroke-width:1.0")
+	render(g2)
+	.circle(c, rai)
+	.circle(c, ra)
+	for i in [0 .. n-1]
+		t = i*dt
+		xi = rot(c, rai, t)
+		xa = rot(c, ra, t)
+		render(g2).line(xi, xa)
+
+	g3.attr("style", "fill:none;stroke:#000000;stroke-width:5.0")
+	g4.attr("style", "fill:none;stroke:#000000;text-anchor=middle")
+	n = 12
+	dt = 2*pi/n
+	for i in [1 .. n]
+		t = i*dt
+		xi = rot(c, rai, t)
+		xa = rot(c, ra, t)
+		xt = [c[0]+rt*sin(t), c[1]+rt*cos(t)]
+		render(g3).line(xi, xa)
+		render(g4).text(xt, ""+i, [0,-18], 26)#.circle(xt, 1)
+
+	animation = () ->
+
+	{svg, g1}
+
 
 base_plan = () ->
 	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2")
@@ -502,7 +548,9 @@ base_plan = () ->
 
 	{svg, g1, animation}
 
-window.gg = ratchet(18, Rnp(30), 0.88)
+#window.gg = ratchet(18, Rnp(30), 0.88)
+
+window.gg = zifferblatt()
 
 #window.start_animation = () -> gg.animation()
 #window.stop_animation = () -> animation_stop(gg)
