@@ -375,12 +375,13 @@ single_gear = (n, rsi, rsa, sn, sd) ->
 	g1 = svg["g1"]
 	p = 8
 	a = rad(20)
+	phi0 = 0.5*pi
 	m = p / pi
 	r = 0.5 * n * m + m
 	x0 = 105
 	y0 = 210
 	c = [x0, y0]
-	render(g1).gear(c, n, p, a).crosshair(c).circle(c, r).spokes(c, rsi, rsa, sn, sd).circle(c, rsi).circle(c, rsa)
+	render(g1).gear(c, n, p, a, phi0).text([c[0], c[1] + rsa - 1], ""+n).crosshair(c).circle(c, r).spokes(c, rsi, rsa, sn, sd, phi0).circle(c, rsi).circle(c, rsa)
 
 	animation = () ->
 
@@ -455,11 +456,12 @@ v2 = () ->
 animation_stop = (gg) -> gg[key].stop() for key in Object.keys(gg) when key.startsWith("g")
 
 zifferblatt = () ->
-	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2", "g3", "g4")
+	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2", "g3", "g4", "g5")
 	g1 = svg["g1"]
 	g2 = svg["g2"]
 	g3 = svg["g3"]
 	g4 = svg["g4"]
+	g5 = svg["g5"]
 
 	c = [160,150]
 	ri = 100
@@ -473,6 +475,7 @@ zifferblatt = () ->
 
 	n = 60
 	dt = 2*pi / n
+	render(g1).crosshair(c)
 
 	g2.attr("style", "fill:none;stroke:#000000;stroke-width:1.0")
 	render(g2)
@@ -494,7 +497,11 @@ zifferblatt = () ->
 		xa = rot(c, ra, t)
 		xt = [c[0]+rt*sin(t), c[1]+rt*cos(t)]
 		render(g3).line(xi, xa)
-		render(g4).text(xt, ""+i, [0,-18], 26)#.circle(xt, 1)
+		render(g4).text(xt, ""+i, [0,-20], 26)#.circle(xt, 1)
+		t1 = t+0.5*dt
+		xi = rot(c, ri, t1)
+		xa = rot(c, rai, t1)
+		render(g1).line(xi, xa)
 
 	animation = () ->
 
@@ -550,8 +557,8 @@ base_plan = () ->
 
 #window.gg = ratchet(18, Rnp(30), 0.88)
 
-window.gg = zifferblatt()
-
+#window.gg = zifferblatt()
+window.gg = single_gear(60, 12, 67, 6, 8)
 #window.start_animation = () -> gg.animation()
 #window.stop_animation = () -> animation_stop(gg)
 window.open_svg = () -> window.open("data:image/svg+xml," + escape(gg.svg.svg.svg()));
