@@ -7,4 +7,4 @@ meine clock making tools
 [laufwerk model v2](http://jsfiddle.net/dz7y84o0/52/)  
 [zeiger_werk_12_48_15_45](http://jsfiddle.net/dz7y84o0/53/)  
 [zifferblatt](http://jsfiddle.net/dz7y84o0/91/)  
-[latest](http://jsfiddle.net/dz7y84o0/93/)  
+[latest](http://jsfiddle.net/dz7y84o0/94/)  

@@ -507,6 +507,60 @@ zifferblatt = () ->
 
 	{svg, g1}
 
+sekundenblatt = () ->
+	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2", "g3", "g4", "g5")
+	g1 = svg["g1"]
+	g2 = svg["g2"]
+	g3 = svg["g3"]
+	g4 = svg["g4"]
+	g5 = svg["g5"]
+
+	c = [80,220]
+	ri = 30
+	ra = 40
+	rai = 38
+	rai2 = 37
+	rt = 34
+
+	render(g1)
+	.circle(c, ri)
+	.circle(c, ra)
+
+	n = 60
+	dt = 2*pi / n
+	render(g1).crosshair(c)
+
+	g2.attr("style", "fill:none;stroke:#000000;stroke-width:0.5")
+	render(g2)
+	#.circle(c, rai)
+	.circle(c, ra)
+	for i in [0 .. n-1]
+		t = i*dt
+		xi = rot(c, rai, t)
+		xa = rot(c, ra, t)
+		render(g2).line(xi, xa)
+
+	g3.attr("style", "fill:none;stroke:#000000;stroke-width:1.0")
+	g4.attr("style", "fill:none;stroke:#000000;text-anchor=middle;stroke-width:0.2")
+	n = 12
+	dt = 2*pi/n
+	for i in [1 .. n]
+		t = i*dt
+		xi = rot(c, rai2, t)
+		xa = rot(c, ra, t)
+		xt = [c[0]+rt*sin(t), c[1]+rt*cos(t)]
+		render(g3).line(xi, xa)
+		if true #i%2 == 0
+			render(g4).text(xt, ""+5*i, [0,1], 5)#.circle(xt, 1)
+		t1 = t+0.5*dt
+		xi = rot(c, ri, t1)
+		xa = rot(c, ra, t1)
+		#render(g1).line(xi, xa)
+
+	animation = () ->
+
+	{svg, g1}
+
 
 base_plan = () ->
 	svg = create_svg("fill:none;stroke:#000000;stroke-width:0.2", "g1", "g2")
@@ -557,8 +611,8 @@ base_plan = () ->
 
 #window.gg = ratchet(18, Rnp(30), 0.88)
 
-#window.gg = zifferblatt()
-window.gg = single_gear(60, 12, 67, 6, 8)
+window.gg = sekundenblatt()
+#window.gg = single_gear(60, 12, 67, 6, 8)
 #window.start_animation = () -> gg.animation()
 #window.stop_animation = () -> animation_stop(gg)
 window.open_svg = () -> window.open("data:image/svg+xml," + escape(gg.svg.svg.svg()));
